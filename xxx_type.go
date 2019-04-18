@@ -2,13 +2,13 @@ package main
 
 type XXXVar struct{
   name string
-  value []byte
+  value []rune
 }
 
 type XXXEnv []XXXVar
 
-func (e *XXXEnv) Add(name string, value []byte) {
+func (e *XXXEnv) Add(name string, value []rune) {
   *e = append(*e, XXXVar{name, value})
 }
 
-type XXXData []byte
+type XXXData []rune
