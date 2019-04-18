@@ -1,18 +1,18 @@
 package main
 
 import (
+  "bufio"
+  "fmt"
   "io"
   "os"
-  "fmt"
-  "bufio"
   "strings"
   "unicode"
 )
 
-func parseDot(line *strings.Reader, env *XXXEnv) (XXXData, *XXXEnv, error) {
+func parseImport(line *strings.Reader, env *XXXEnv) (XXXData, *XXXEnv, error) {
   ch, _, err := line.ReadRune()
   if !unicode.IsSpace(ch) {
-    fmt.Fprintln(os.Stderr, "not valid use of dot command")
+    fmt.Fprintln(os.Stderr, "not valid use of import command (.)")
     os.Exit(1)
   } else if err != nil {
     panic(err)
@@ -21,37 +21,51 @@ func parseDot(line *strings.Reader, env *XXXEnv) (XXXData, *XXXEnv, error) {
   return nil, nil, nil
 }
 
-func parseVar(line *strings.Reader, env *XXXEnv) (XXXData, error) {
+func parseAssign(line *strings.Reader, env *XXXEnv) (*XXXEnv, error) {
   ch, _, err := line.ReadRune()
-  if !unicode.IsLetter(ch) {
-    fmt.Fprintln(os.Stderr, "not valid use of dot command")
+  if !unicode.IsSpace(ch) {
+    fmt.Fprintln(os.Stderr, "not valid use of assign command (=)")
     os.Exit(1)
   } else if err != nil {
     panic(err)
+  }
+
+  return env, nil
+}
+
+func parseNum(line *strings.Reader) (XXXData, error) {
+  ch, _, _ := line.ReadRune()
+  if ch == '0' {
+  } else {
   }
 
   return nil, nil
 }
 
-func parseAssign(line *strings.Reader, env *XXXEnv) (*XXXEnv, error) {
-  return env, nil
-}
+func parseVar(line *strings.Reader, env *XXXEnv) (XXXData, error) {
+  ch, _, _ := line.ReadRune()
 
-func parseNumber(line *strings.Reader) {
-  ch, _, err := line.ReadRune()
-  if !unicode.IsNumber(ch) {
-    fmt.Fprintln(os.Stderr, "not valid format of number")
-    os.Exit(1)
-  } else if err != nil {
-    panic(err)
-  }
+  return nil, nil
 }
 
 func parseLine(line *strings.Reader, env *XXXEnv) (XXXData, *XXXEnv) {
+  var ch rune
+  var err error
+
   data := make(XXXData, 0)
 
-  loop: for {
-    ch, _, err := line.ReadRune()
+  ch, _, err = line.ReadRune()
+  switch ch {
+  case '.':
+    parseImport(line, env)
+  case '=':
+    parseAssign(line, env)
+  }
+  line.UnreadRune()
+
+loop:
+  for {
+    ch, _, err = line.ReadRune()
     if err == io.EOF {
       break loop
     } else if err != nil {
@@ -61,26 +75,26 @@ func parseLine(line *strings.Reader, env *XXXEnv) (XXXData, *XXXEnv) {
     switch {
     case unicode.IsSpace(ch):
       continue
-    case unicode.IsLetter(ch):
-      line.UnreadRune()
-      env, _ = parseAssign(line, env)
     case unicode.IsNumber(ch):
       line.UnreadRune()
-      parseNumber(line)
-    case ch == '.':
-      parseDot(line, env)
-    case ch == '$':
-      val, err := parseVar(line, env)
-      if err != nil {
-        panic(err)
-      }
-      data = append(data, val...)
+      data, _ = parseNum(line)
+    case unicode.IsLetter(ch):
+      line.UnreadRune()
+      data, _ = parseVar(line, env)
     case ch == '#':
       break loop
     case ch == '\x00':
       break loop
+    case ch == '.':
+      fmt.Fprintln(os.Stderr,
+        "import command (.) have to be issued at start of the line")
+      os.Exit(1)
+    case ch == '=':
+      fmt.Fprintln(os.Stderr,
+        "assign command (=) have to be issued at start of the line")
+      os.Exit(1)
     default:
-      fmt.Fprintln(os.Stderr, "not valid input")
+      fmt.Fprintf(os.Stderr, "%v is not valid input\n", ch)
       os.Exit(1)
     }
   }
