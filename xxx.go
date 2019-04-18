@@ -4,7 +4,8 @@ import (
   "os"
   "fmt"
   "flag"
-  "bufio"
+
+  "./parser"
 )
 
 func usage(exitcode int) {
@@ -22,23 +23,23 @@ func usage(exitcode int) {
 
 type Option struct {
   help bool
-  dst_file string
-  src_file string
+  dst string
+  src string
 }
 
 func NewOption() *Option {
   opt := new(Option)
 
   flag.BoolVar(&opt.help, "h", false, "Show usage")
-  flag.StringVar(&opt.dst_file, "o", "", "Specify output file")
+  flag.StringVar(&opt.dst, "o", "", "Specify output file")
 
   flag.Parse()
   if opt.help {
     usage(0)
   }
 
-  opt.src_file = flag.Arg(0)
-  if opt.src_file == "" {
+  opt.src = flag.Arg(0)
+  if opt.src == "" {
     usage(1)
   }
 
@@ -48,16 +49,10 @@ func NewOption() *Option {
 func main() {
   opt := NewOption()
 
-  file, err := os.Open(opt.src_file)
+  file, err := os.Open(opt.src)
   if err != nil {
     panic(err)
   }
 
-  scanner := bufio.NewScanner(file)
-  for scanner.Scan() {
-    fmt.Println(scanner.Text())
-  }
-  if err := scanner.Err(); err != nil {
-    panic(err)
-  }
+  parser.Parse(file)
 }
