@@ -1,4 +1,4 @@
 package main
 
-func Dump(data *XXXData) {
+func Dump(pool []XXXData) {
 }

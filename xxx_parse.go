@@ -89,15 +89,16 @@ func parseLine(line *strings.Reader, env *XXXEnv) (XXXData, *XXXEnv) {
 }
 
 func Parse(file io.Reader) []XXXData {
-  env := new(XXXEnv)
-  scanner := bufio.NewScanner(file)
-  pool := make([]XXXData, 0)
+  var data XXXData
+  var env *XXXEnv = new(XXXEnv)
+  var pool []XXXData = make([]XXXData, 0)
 
+  scanner := bufio.NewScanner(file)
   for scanner.Scan() {
     text := scanner.Text()
     line := strings.NewReader(text)
 
-    data, env := parseLine(line, env)
+    data, env = parseLine(line, env)
     if data != nil {
       pool = append(pool, data)
     }
