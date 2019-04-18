@@ -9,7 +9,7 @@ import (
 
 func parseLine(line string) {
   fmt.Println(line)
-  r := strings.NewReader(line)
+  strings.NewReader(line)
 }
 
 func Parse(file io.Reader) *XXXData {
