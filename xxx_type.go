@@ -11,4 +11,6 @@ func (e *XXXEnv) Add(name string, value []rune) {
   *e = append(*e, XXXVar{name, value})
 }
 
-type XXXData []rune
+type XXXToken []rune
+
+type XXXData []byte

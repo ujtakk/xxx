@@ -43,8 +43,6 @@ func parseNum(line *strings.Reader) (XXXData, error) {
 }
 
 func parseVar(line *strings.Reader, env *XXXEnv) (XXXData, error) {
-  ch, _, _ := line.ReadRune()
-
   return nil, nil
 }
 
