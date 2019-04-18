@@ -4,12 +4,9 @@ import (
   "os"
   "fmt"
   "flag"
-
-  "./parser"
 )
 
 func usage(exitcode int) {
-  // message := fmt.Sprintf(`usage: %v [-h] [-o {dst}] {src}`, os.Args[0])
   message := fmt.Sprintf(`usage: xxx [-h] [-o {dst}] {src}`)
 
   if exitcode == 0 {
@@ -27,11 +24,11 @@ type Option struct {
   src string
 }
 
-func NewOption() *Option {
+func newOption() *Option {
   opt := new(Option)
 
   flag.BoolVar(&opt.help, "h", false, "Show usage")
-  flag.StringVar(&opt.dst, "o", "", "Specify output file")
+  flag.StringVar(&opt.dst, "o", "", "Specify target")
 
   flag.Parse()
   if opt.help {
@@ -47,12 +44,12 @@ func NewOption() *Option {
 }
 
 func main() {
-  opt := NewOption()
+  opt := newOption()
 
   file, err := os.Open(opt.src)
   if err != nil {
     panic(err)
   }
 
-  parser.Parse(file)
+  Dump(Parse(file))
 }
