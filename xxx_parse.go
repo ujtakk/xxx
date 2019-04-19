@@ -9,48 +9,135 @@ import (
   "unicode"
 )
 
-func parseImport(line *strings.Reader, env *XXXEnv) (XXXData, *XXXEnv, error) {
+func parseNum(line *strings.Reader) XXXToken {
+  token := NewToken()
+
   ch, _, err := line.ReadRune()
-  if !unicode.IsSpace(ch) {
-    fmt.Fprintln(os.Stderr, "not valid use of import command (.)")
-    os.Exit(1)
-  } else if err != nil {
-    panic(err)
-  }
+  token = token.AddRune(ch)
+  fmt.Printf("%1v %2x %x\n", string(ch), ch, token)
 
-  return nil, nil, nil
-}
-
-func parseAssign(line *strings.Reader, env *XXXEnv) (*XXXEnv, error) {
-  ch, _, err := line.ReadRune()
-  if !unicode.IsSpace(ch) {
-    fmt.Fprintln(os.Stderr, "not valid use of assign command (=)")
-    os.Exit(1)
-  } else if err != nil {
-    panic(err)
-  }
-
-  return env, nil
-}
-
-func parseNum(line *strings.Reader) (XXXData, error) {
-  ch, _, _ := line.ReadRune()
   if ch == '0' {
-  } else {
+    ch, _, _ := line.ReadRune()
+    switch {
+    case ch == 'b':
+    case ch == 'x':
+    case unicode.IsNumber(ch):
+    default:
+      fmt.Fprintln(os.Stderr, "ERROR: not valid number format (2, 8, 10, 16)")
+      os.Exit(1)
+    }
+    token = token.AddRune(ch)
+    fmt.Printf("%1v %2x %x\n", string(ch), ch, token)
   }
 
-  return nil, nil
+loop:
+  for {
+    ch, _, err = line.ReadRune()
+    if err == io.EOF {
+      break loop
+    } else if err != nil {
+      panic(err)
+    }
+
+    switch {
+    case unicode.IsNumber(ch):
+    case unicode.IsSpace(ch):
+      break loop
+    default:
+      fmt.Fprintln(os.Stderr, "ERROR: not valid number format (2, 8, 10, 16)")
+      os.Exit(1)
+    }
+    token = token.AddRune(ch)
+    fmt.Printf("%1v %2x %x\n", string(ch), ch, token)
+  }
+
+  fmt.Println()
+  return token
 }
 
-func parseVar(line *strings.Reader, env *XXXEnv) (XXXData, error) {
-  return nil, nil
+func parseVar(line *strings.Reader) XXXToken {
+  token := NewToken()
+
+loop:
+  for {
+    ch, _, err := line.ReadRune()
+    if err == io.EOF {
+      break loop
+    } else if err != nil {
+      panic(err)
+    }
+
+    switch {
+    case unicode.IsLetter(ch):
+    case unicode.IsSpace(ch):
+      break loop
+    default:
+      fmt.Fprintln(os.Stderr, "ERROR: not valid number format (2, 8, 10, 16)")
+      os.Exit(1)
+    }
+    token.AddRune(ch)
+  }
+
+  return token
 }
 
-func parseLine(line *strings.Reader, env *XXXEnv) (XXXData, *XXXEnv) {
+func parseAssign(line *strings.Reader, env *XXXEnv) *XXXEnv {
+  var name string
+  var token XXXToken
+
+  ch, _, err := line.ReadRune()
+  if !unicode.IsSpace(ch) {
+    fmt.Fprintln(os.Stderr, "ERROR: commands have to be separated by spaces")
+    os.Exit(1)
+  } else if err != nil {
+    panic(err)
+  }
+
+loop:
+  for {
+    ch, _, err = line.ReadRune()
+    if err == io.EOF {
+      break loop
+    } else if err != nil {
+      panic(err)
+    }
+
+    switch {
+    case unicode.IsSpace(ch):
+      continue
+    case unicode.IsNumber(ch):
+      line.UnreadRune()
+      token = parseNum(line)
+      env.Add(name, token)
+      break loop
+    case unicode.IsLetter(ch):
+      line.UnreadRune()
+      token = parseVar(line)
+      env.Add(name, token)
+      break loop
+    }
+  }
+
+  return env
+}
+
+func parseImport(line *strings.Reader, env *XXXEnv) ([]XXXToken, *XXXEnv) {
+  ch, _, err := line.ReadRune()
+  if !unicode.IsSpace(ch) {
+    fmt.Fprintln(os.Stderr, "ERROR: commands have to be separated by spaces")
+    os.Exit(1)
+  } else if err != nil {
+    panic(err)
+  }
+
+  return nil, env
+}
+
+func parseLine(line *strings.Reader, env *XXXEnv) ([]XXXToken, *XXXEnv) {
   var ch rune
   var err error
 
-  data := make(XXXData, 0)
+  tokens := make([]XXXToken, 0)
 
   ch, _, err = line.ReadRune()
   switch ch {
@@ -75,10 +162,12 @@ loop:
       continue
     case unicode.IsNumber(ch):
       line.UnreadRune()
-      data, _ = parseNum(line)
+      token := parseNum(line)
+      tokens = append(tokens, token)
     case unicode.IsLetter(ch):
       line.UnreadRune()
-      data, _ = parseVar(line, env)
+      token := parseVar(line)
+      tokens = append(tokens, token)
     case ch == '#':
       break loop
     case ch == '\x00':
@@ -97,29 +186,34 @@ loop:
     }
   }
 
-  return data, env
+  return tokens, env
 }
 
-func Parse(file io.Reader) []XXXData {
-  var data XXXData
-  var env *XXXEnv = new(XXXEnv)
-  var pool []XXXData = make([]XXXData, 0)
+func Parse(src string) ([]XXXToken, *XXXEnv) {
+  var token []XXXToken
+  var env *XXXEnv = NewEnv()
+  var pool []XXXToken = make([]XXXToken, 0)
+
+  file, err := os.Open(src)
+  if err != nil {
+    panic(err)
+  }
 
   scanner := bufio.NewScanner(file)
   for scanner.Scan() {
     text := scanner.Text()
     line := strings.NewReader(text)
 
-    data, env = parseLine(line, env)
-    if data != nil {
-      pool = append(pool, data)
+    token, env = parseLine(line, env)
+    if token != nil {
+      pool = append(pool, token...)
     }
 
-    fmt.Printf("%v\n%v\n\n", text, data)
+    fmt.Printf("%v\n%v\n\n", text, token)
   }
   if err := scanner.Err(); err != nil {
     panic(err)
   }
 
-  return pool
+  return pool, env
 }

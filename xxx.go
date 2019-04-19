@@ -31,25 +31,20 @@ func newOption() *Option {
   flag.StringVar(&opt.dst, "o", "", "Specify target")
 
   flag.Parse()
-  if opt.help {
-    usage(0)
-  }
 
   opt.src = flag.Arg(0)
-  if opt.src == "" {
-    usage(1)
-  }
 
   return opt
 }
 
 func main() {
   opt := newOption()
-
-  file, err := os.Open(opt.src)
-  if err != nil {
-    panic(err)
+  if opt.help {
+    usage(0)
+  } else if opt.src == "" {
+    usage(1)
   }
 
-  Dump(Parse(file))
+  pool, env := Parse(opt.src)
+  Dump(opt.dst, pool, env)
 }
