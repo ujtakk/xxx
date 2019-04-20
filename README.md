@@ -67,7 +67,7 @@ jmp     0x0000                  # Jump to the origin
 ```
 
 This source is packed by the command below:
-(Sequence is dumped for stdout when `-o` option is omited.)
+(Sequence is dumped for stdout when `-o` option is omitted.)
 ```
 $ xxx -o test.bin examples/level-4.xxx
 ```
