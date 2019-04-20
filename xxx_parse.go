@@ -126,7 +126,6 @@ func parseAssign(line *strings.Reader, env *XXXEnv) *XXXEnv {
   }
 
   env = env.Set(name, token)
-  fmt.Println(name, token.Compile())
 
   return env
 }

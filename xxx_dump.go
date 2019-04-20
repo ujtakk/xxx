@@ -122,7 +122,6 @@ func dumpLine(tokens []*XXXToken, env *XXXEnv) *XXXData {
   data := NewData()
 
   for _, token := range tokens {
-    fmt.Println(token.Compile())
     switch token.tag {
     case XXX_BIN:
       data = dumpBin(data, token)
