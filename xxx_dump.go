@@ -101,13 +101,28 @@ func dumpHex(data *XXXData, token *XXXToken) *XXXData {
 }
 
 func dumpVar(data *XXXData, token *XXXToken, env *XXXEnv) *XXXData {
-  return nil
+  value := env.Get(token.Compile())
+  switch value.tag {
+    case XXX_BIN:
+      data = dumpBin(data, value)
+    case XXX_OCT:
+      data = dumpOct(data, value)
+    case XXX_DEC:
+      data = dumpDec(data, value)
+    case XXX_HEX:
+      data = dumpHex(data, value)
+    case XXX_VAR:
+      data = dumpVar(data, value, env)
+  }
+
+  return data
 }
 
 func dumpLine(tokens []*XXXToken, env *XXXEnv) *XXXData {
   data := NewData()
 
   for _, token := range tokens {
+    fmt.Println(token.Compile())
     switch token.tag {
     case XXX_BIN:
       data = dumpBin(data, token)
@@ -119,6 +134,9 @@ func dumpLine(tokens []*XXXToken, env *XXXEnv) *XXXData {
       data = dumpHex(data, token)
     case XXX_VAR:
       data = dumpVar(data, token, env)
+    default:
+      fmt.Fprintln(os.Stderr, "ERROR: invalid token tag")
+      os.Exit(1)
     }
   }
 
@@ -131,12 +149,9 @@ func dumpLine(tokens []*XXXToken, env *XXXEnv) *XXXData {
 }
 
 func Dump(dst string, pool [][]*XXXToken, env *XXXEnv) {
-  fmt.Println(pool)
-  fmt.Println()
-
   var file *os.File
   if dst == "" {
-    file = os.Stderr
+    file = os.Stdout
   } else {
     var err error
     file, err = os.Create(dst)
@@ -147,11 +162,9 @@ func Dump(dst string, pool [][]*XXXToken, env *XXXEnv) {
   }
 
   writer := bufio.NewWriter(file)
-  for _, token := range pool {
-    data := dumpLine(token, env)
-    fmt.Println(data.body)
-    n, err := writer.Write(data.body)
-    fmt.Println(n)
+  for _, tokens := range pool {
+    data := dumpLine(tokens, env)
+    _, err := writer.Write(data.body)
     if err != nil {
       panic(err)
     }

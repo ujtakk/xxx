@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 const BYTE = 8
 
 type XXXType int
@@ -28,6 +26,10 @@ func NewToken() *XXXToken {
 func (t *XXXToken) Add(r rune) *XXXToken {
   t.body = append(t.body, r)
   return t
+}
+
+func (t *XXXToken) Compile() string {
+  return string(t.body)
 }
 
 type XXXData struct{
@@ -66,17 +68,24 @@ func (d *XXXData) Join(s uint, l int) *XXXData {
     d.body[index] = byte((s << (d.capacity-length)) & 0xFF) | d.body[index]
     d.capacity -= length
   }
-  fmt.Printf("%08b (%2d: %2d) -> (%2d, %2d)%08b\n", s, s, l, index, d.capacity, d.body)
 
   return d
 }
 
+// TODO: map may be inefficient?
 type XXXEnv map[string]*XXXToken
 
 func NewEnv() *XXXEnv {
-  return new(XXXEnv)
+  hoge := make(XXXEnv)
+  return &hoge
 }
 
-func (e *XXXEnv) Set(name string, value *XXXToken) {
+func (e *XXXEnv) Set(name string, value *XXXToken) *XXXEnv {
   (*e)[name] = value
+
+  return e
+}
+
+func (e *XXXEnv) Get(name string) *XXXToken {
+  return (*e)[name]
 }
