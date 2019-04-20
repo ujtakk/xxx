@@ -1,7 +1,7 @@
 package main
 
 import (
-  "fmt"
+  // "fmt"
   "os"
   "bufio"
   "math/bits"
@@ -14,7 +14,7 @@ func dumpBin(data *XXXData, token *XXXToken) *XXXData {
     case '0': value += 0x0
     case '1': value += 0x1
     default:
-      os.Exit(1)
+      panic("ERROR: dumpBin failed")
     }
   }
 
@@ -35,7 +35,7 @@ func dumpOct(data *XXXData, token *XXXToken) *XXXData {
     case '6': value += 0x6
     case '7': value += 0x7
     default:
-      os.Exit(1)
+      panic("ERROR: dumpBin failed")
     }
   }
 
@@ -58,7 +58,7 @@ func dumpDec(data *XXXData, token *XXXToken) *XXXData {
     case '8': value += 0x8
     case '9': value += 0x9
     default:
-      os.Exit(1)
+      panic("ERROR: dumpBin failed")
     }
   }
 
@@ -93,7 +93,7 @@ func dumpHex(data *XXXData, token *XXXToken) *XXXData {
     case 'f': fallthrough
     case 'F': value += 0xF
     default:
-      os.Exit(1)
+      panic("ERROR: dumpBin failed")
     }
   }
 
@@ -134,14 +134,12 @@ func dumpLine(tokens []*XXXToken, env *XXXEnv) *XXXData {
     case XXX_VAR:
       data = dumpVar(data, token, env)
     default:
-      fmt.Fprintln(os.Stderr, "ERROR: invalid token tag")
-      os.Exit(1)
+      panic("ERROR: invalid token tag")
     }
   }
 
   if data.capacity != 0 {
-    fmt.Fprintln(os.Stderr, "ERROR: each line must be a multiple of 8 bits")
-    os.Exit(1)
+    panic("ERROR: each line must be a multiple of 8 bits")
   }
 
   return data

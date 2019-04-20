@@ -89,3 +89,11 @@ func (e *XXXEnv) Set(name string, value *XXXToken) *XXXEnv {
 func (e *XXXEnv) Get(name string) *XXXToken {
   return (*e)[name]
 }
+
+func (e *XXXEnv) Concat(xe *XXXEnv) *XXXEnv {
+  for key, value := range *xe {
+    (*e)[key] = value
+  }
+
+  return e
+}

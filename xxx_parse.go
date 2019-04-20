@@ -2,7 +2,6 @@ package main
 
 import (
   "bufio"
-  "fmt"
   "io"
   "os"
   "strings"
@@ -28,8 +27,7 @@ func parseNum(line *strings.Reader) *XXXToken {
       token = token.Add('0')
       return token
     default:
-      fmt.Fprintln(os.Stderr, "ERROR: not valid number format (2, 8, 10, 16)")
-      os.Exit(1)
+      panic("ERROR: not valid number format (2, 8, 10, 16)")
     }
   } else {
     token.tag = XXX_DEC
@@ -39,16 +37,12 @@ func parseNum(line *strings.Reader) *XXXToken {
 loop:
   for {
     char, _, err = line.ReadRune()
-    if err == io.EOF {
+    if err == io.EOF || unicode.IsSpace(char) {
       break loop
-    } else if err != nil {
+    }
+    if err != nil {
       panic(err)
     }
-
-    if unicode.IsSpace(char) {
-      break loop
-    }
-
     token = token.Add(char)
   }
 
@@ -62,16 +56,12 @@ func parseVar(line *strings.Reader) *XXXToken {
 loop:
   for {
     char, _, err := line.ReadRune()
-    if err == io.EOF {
-      break loop
-    } else if err != nil {
+    if err != nil {
       panic(err)
     }
-
-    if unicode.IsSpace(char) {
+    if err == io.EOF || unicode.IsSpace(char) {
       break loop
     }
-
     token = token.Add(char)
   }
 
@@ -84,8 +74,7 @@ func parseAssign(line *strings.Reader, env *XXXEnv) *XXXEnv {
 
   char, _, err := line.ReadRune()
   if !unicode.IsSpace(char) {
-    fmt.Fprintln(os.Stderr, "ERROR: commands have to be separated by spaces")
-    os.Exit(1)
+    panic("ERROR: commands have to be separated by spaces")
   } else if err != nil {
     panic(err)
   }
@@ -101,8 +90,7 @@ func parseAssign(line *strings.Reader, env *XXXEnv) *XXXEnv {
     line.UnreadRune()
     name = parseVar(line).Compile()
   } else {
-    fmt.Fprintln(os.Stderr, "ERROR: commands have to be separated by spaces")
-    os.Exit(1)
+    panic("ERROR: not valid format for assignment")
   }
 
   char, _, err = line.ReadRune()
@@ -121,8 +109,7 @@ func parseAssign(line *strings.Reader, env *XXXEnv) *XXXEnv {
       line.UnreadRune()
       token = parseNum(line)
     default:
-      fmt.Fprintln(os.Stderr, "ERROR: commands have to be separated by spaces")
-      os.Exit(1)
+      panic("ERROR: not valid format for assignment")
   }
 
   env = env.Set(name, token)
@@ -130,16 +117,51 @@ func parseAssign(line *strings.Reader, env *XXXEnv) *XXXEnv {
   return env
 }
 
-func parseImport(line *strings.Reader, env *XXXEnv) ([]XXXToken, *XXXEnv) {
+func parseImport(line *strings.Reader, env *XXXEnv) ([][]*XXXToken, *XXXEnv) {
   char, _, err := line.ReadRune()
   if !unicode.IsSpace(char) {
-    fmt.Fprintln(os.Stderr, "ERROR: commands have to be separated by spaces")
-    os.Exit(1)
+    panic("ERROR: commands have to be separated by spaces")
   } else if err != nil {
     panic(err)
   }
 
-  return nil, env
+  for unicode.IsSpace(char) {
+    char, _, err = line.ReadRune()
+    if err != nil {
+      panic(err)
+    }
+  }
+
+  filepath := make([]rune, 0)
+  for !unicode.IsSpace(char) && err != io.EOF {
+    filepath = append(filepath, char)
+    char, _, err = line.ReadRune()
+  }
+
+  xpool, xenv := Parse(string(filepath))
+
+  return xpool, xenv
+}
+
+func parseCommand(line *strings.Reader, env *XXXEnv) ([][]*XXXToken, *XXXEnv) {
+  char, _, err := line.ReadRune()
+  switch char {
+  case '.':
+    xpool, xenv := parseImport(line, env)
+    return xpool, xenv
+  case '=':
+    env = parseAssign(line, env)
+    return nil, env
+  default:
+    if err == io.EOF {
+      return nil, nil
+    } else if err != nil {
+      panic(err)
+    }
+    line.UnreadRune()
+  }
+
+  return nil, nil
 }
 
 func parseLine(line *strings.Reader, env *XXXEnv) ([]*XXXToken, *XXXEnv) {
@@ -147,15 +169,6 @@ func parseLine(line *strings.Reader, env *XXXEnv) ([]*XXXToken, *XXXEnv) {
   var err error
 
   tokens := make([]*XXXToken, 0)
-
-  char, _, err = line.ReadRune()
-  switch char {
-  case '.':
-    parseImport(line, env)
-  case '=':
-    env = parseAssign(line, env)
-  }
-  line.UnreadRune()
 
 loop:
   for {
@@ -180,8 +193,7 @@ loop:
     case char == '#':
       break loop
     default:
-      fmt.Fprintf(os.Stderr, "%v is not valid input\n", char)
-      os.Exit(1)
+      panic("ERROR: "+string(char)+" is not valid input")
     }
   }
 
@@ -209,6 +221,19 @@ func Parse(src string) ([][]*XXXToken, *XXXEnv) {
   for scanner.Scan() {
     text := scanner.Text()
     line := strings.NewReader(text)
+
+    var xpool [][]*XXXToken
+    var xenv *XXXEnv
+    xpool, xenv = parseCommand(line, env)
+    if xpool != nil || xenv != nil {
+      if xpool != nil {
+        pool = append(pool, xpool...)
+      }
+      if xenv != nil {
+        env = env.Concat(xenv)
+      }
+      continue
+    }
 
     tokens, env = parseLine(line, env)
     if len(tokens) > 0 {
