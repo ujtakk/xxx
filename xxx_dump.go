@@ -2,36 +2,144 @@ package main
 
 import (
   "fmt"
-  "io"
   "os"
   "bufio"
+  "math/bits"
 )
+func dumpBin(data *XXXData, token *XXXToken) *XXXData {
+  value := uint(0)
+  for _, char := range token.body {
+    value <<= 1
+    switch char {
+    case '0': value += 0x0
+    case '1': value += 0x1
+    default:
+      os.Exit(1)
+    }
+  }
 
-func isTokenSound(token XXXToken) bool {
-  return true
+  return data.Join(value, 1*len(token.body))
 }
 
-func DumpVar(token XXXToken) XXXData {
+func dumpOct(data *XXXData, token *XXXToken) *XXXData {
+  value := uint(0)
+  for _, char := range token.body {
+    value <<= 3
+    switch char {
+    case '0': value += 0x0
+    case '1': value += 0x1
+    case '2': value += 0x2
+    case '3': value += 0x3
+    case '4': value += 0x4
+    case '5': value += 0x5
+    case '6': value += 0x6
+    case '7': value += 0x7
+    default:
+      os.Exit(1)
+    }
+  }
+
+  return data.Join(value, 3*len(token.body))
+}
+
+func dumpDec(data *XXXData, token *XXXToken) *XXXData {
+  value := uint(0)
+  for _, char := range token.body {
+    value *= 10
+    switch char {
+    case '0': value += 0x0
+    case '1': value += 0x1
+    case '2': value += 0x2
+    case '3': value += 0x3
+    case '4': value += 0x4
+    case '5': value += 0x5
+    case '6': value += 0x6
+    case '7': value += 0x7
+    case '8': value += 0x8
+    case '9': value += 0x9
+    default:
+      os.Exit(1)
+    }
+  }
+
+  return data.Join(value, bits.Len(value))
+}
+
+func dumpHex(data *XXXData, token *XXXToken) *XXXData {
+  value := uint(0)
+  for _, char := range token.body {
+    value <<= 4
+    switch char {
+    case '0': value += 0x0
+    case '1': value += 0x1
+    case '2': value += 0x2
+    case '3': value += 0x3
+    case '4': value += 0x4
+    case '5': value += 0x5
+    case '6': value += 0x6
+    case '7': value += 0x7
+    case '8': value += 0x8
+    case '9': value += 0x9
+    case 'a': fallthrough
+    case 'A': value += 0xA
+    case 'b': fallthrough
+    case 'B': value += 0xB
+    case 'c': fallthrough
+    case 'C': value += 0xC
+    case 'd': fallthrough
+    case 'D': value += 0xD
+    case 'e': fallthrough
+    case 'E': value += 0xE
+    case 'f': fallthrough
+    case 'F': value += 0xF
+    default:
+      os.Exit(1)
+    }
+  }
+
+  return data.Join(value, 4*len(token.body))
+}
+
+func dumpVar(data *XXXData, token *XXXToken, env *XXXEnv) *XXXData {
   return nil
 }
 
-func DumpToken(token XXXToken, env *XXXEnv) XXXData {
-  if !isTokenSound(token) {
-    fmt.Fprintf(os.Stderr, "ERROR: lines have to be composed by bytes")
+func dumpLine(tokens []*XXXToken, env *XXXEnv) *XXXData {
+  data := NewData()
+
+  for _, token := range tokens {
+    switch token.tag {
+    case XXX_BIN:
+      data = dumpBin(data, token)
+    case XXX_OCT:
+      data = dumpOct(data, token)
+    case XXX_DEC:
+      data = dumpDec(data, token)
+    case XXX_HEX:
+      data = dumpHex(data, token)
+    case XXX_VAR:
+      data = dumpVar(data, token, env)
+    }
+  }
+
+  if data.capacity != 0 {
+    fmt.Fprintln(os.Stderr, "ERROR: each line must be a multiple of 8 bits")
     os.Exit(1)
   }
 
-  return nil
+  return data
 }
 
-func Dump(dst string, pool []XXXToken, env *XXXEnv) {
+func Dump(dst string, pool [][]*XXXToken, env *XXXEnv) {
   fmt.Println(pool)
+  fmt.Println()
 
-  var file io.Writer
+  var file *os.File
   if dst == "" {
-    file = os.Stdout
+    file = os.Stderr
   } else {
-    file, err := os.Create(dst)
+    var err error
+    file, err = os.Create(dst)
     if err != nil {
       panic(err)
     }
@@ -40,10 +148,13 @@ func Dump(dst string, pool []XXXToken, env *XXXEnv) {
 
   writer := bufio.NewWriter(file)
   for _, token := range pool {
-    data := DumpToken(token, env)
-    _, err := writer.Write(data)
+    data := dumpLine(token, env)
+    fmt.Println(data.body)
+    n, err := writer.Write(data.body)
+    fmt.Println(n)
     if err != nil {
       panic(err)
     }
   }
+  writer.Flush()
 }
