@@ -39,8 +39,7 @@ loop:
     char, _, err = line.ReadRune()
     if err == io.EOF || unicode.IsSpace(char) {
       break loop
-    }
-    if err != nil {
+    } else if err != nil {
       panic(err)
     }
     token = token.Add(char)
@@ -56,11 +55,10 @@ func parseVar(line *strings.Reader) *XXXToken {
 loop:
   for {
     char, _, err := line.ReadRune()
-    if err != nil {
-      panic(err)
-    }
     if err == io.EOF || unicode.IsSpace(char) {
       break loop
+    } else if err != nil {
+      panic(err)
     }
     token = token.Add(char)
   }
