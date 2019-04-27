@@ -1,4 +1,4 @@
-xxx (tentative)
+XXX (tentative)
 ============================================================
 General purpose binary builder
 
