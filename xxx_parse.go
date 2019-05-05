@@ -42,7 +42,14 @@ loop:
 		} else if err != nil {
 			panic(err)
 		}
-		token = token.Add(char)
+
+		switch {
+		case unicode.IsNumber(char):
+			token = token.Add(char)
+		case char == '_':
+		default:
+			panic("ERROR: not valid number format (2, 8, 10, 16)")
+		}
 	}
 
 	return token
