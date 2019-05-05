@@ -7,7 +7,7 @@ import (
 )
 
 func usage(exitcode int) {
-	message := fmt.Sprintf(`usage: xxx [-h] [-o {dst}] {src}`)
+	message := fmt.Sprintf(`usage: xxx [-h] [-l] [-o {dst}] {src}`)
 
 	if exitcode == 0 {
 		fmt.Println(message)
