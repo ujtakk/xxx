@@ -19,7 +19,7 @@ func parseNum(line *strings.Reader) *XXXToken {
 			token.tag = XXX_BIN
 		case char == 'x':
 			token.tag = XXX_HEX
-		case unicode.IsNumber(char):
+		case unicode.IsDigit(char):
 			token.tag = XXX_OCT
 			token = token.Add(char)
 		case unicode.IsSpace(char):
@@ -27,7 +27,7 @@ func parseNum(line *strings.Reader) *XXXToken {
 			token = token.Add('0')
 			return token
 		default:
-			panic("ERROR: not valid number format (2, 8, 10, 16)")
+			panic("not valid number format")
 		}
 	} else {
 		token.tag = XXX_DEC
@@ -44,11 +44,11 @@ loop:
 		}
 
 		switch {
-		case unicode.IsNumber(char):
+		case unicode.IsDigit(char), unicode.IsLetter(char):
 			token = token.Add(char)
 		case char == '_':
 		default:
-			panic("ERROR: not valid number format (2, 8, 10, 16)")
+			panic("not valid number format")
 		}
 	}
 
@@ -67,7 +67,13 @@ loop:
 		} else if err != nil {
 			panic(err)
 		}
-		token = token.Add(char)
+
+		switch {
+		case unicode.IsDigit(char), unicode.IsLetter(char):
+			token = token.Add(char)
+		default:
+			panic(string(char) + " is not valid variable format")
+		}
 	}
 
 	return token
@@ -79,7 +85,7 @@ func parseAssign(line *strings.Reader, env *XXXEnv) *XXXEnv {
 
 	char, _, err := line.ReadRune()
 	if !unicode.IsSpace(char) {
-		panic("ERROR: commands have to be separated by spaces")
+		panic("commands have to be separated by spaces")
 	} else if err != nil {
 		panic(err)
 	}
@@ -95,7 +101,7 @@ func parseAssign(line *strings.Reader, env *XXXEnv) *XXXEnv {
 		line.UnreadRune()
 		name = parseVar(line).Compile()
 	} else {
-		panic("ERROR: not valid format for assignment")
+		panic("not valid format for assignment")
 	}
 
 	char, _, err = line.ReadRune()
@@ -110,11 +116,11 @@ func parseAssign(line *strings.Reader, env *XXXEnv) *XXXEnv {
 	case unicode.IsLetter(char):
 		line.UnreadRune()
 		token = parseVar(line)
-	case unicode.IsNumber(char):
+	case unicode.IsDigit(char):
 		line.UnreadRune()
 		token = parseNum(line)
 	default:
-		panic("ERROR: not valid format for assignment")
+		panic("not valid format for assignment")
 	}
 
 	env = env.Set(name, token)
@@ -125,7 +131,7 @@ func parseAssign(line *strings.Reader, env *XXXEnv) *XXXEnv {
 func parseImport(line *strings.Reader, env *XXXEnv) ([][]*XXXToken, *XXXEnv) {
 	char, _, err := line.ReadRune()
 	if !unicode.IsSpace(char) {
-		panic("ERROR: commands have to be separated by spaces")
+		panic("commands have to be separated by spaces")
 	} else if err != nil {
 		panic(err)
 	}
@@ -187,7 +193,7 @@ loop:
 		switch {
 		case unicode.IsSpace(char):
 			continue
-		case unicode.IsNumber(char):
+		case unicode.IsDigit(char):
 			line.UnreadRune()
 			token := parseNum(line)
 			tokens = append(tokens, token)
@@ -198,7 +204,7 @@ loop:
 		case char == '#':
 			break loop
 		default:
-			panic("ERROR: " + string(char) + " is not valid input")
+			panic(string(char) + " is not valid input")
 		}
 	}
 
