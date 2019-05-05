@@ -44,9 +44,9 @@ loop:
 		}
 
 		switch {
+		case char == '_':
 		case unicode.IsDigit(char), unicode.IsLetter(char):
 			token = token.Add(char)
-		case char == '_':
 		default:
 			panic("not valid number format")
 		}
@@ -69,6 +69,8 @@ loop:
 		}
 
 		switch {
+		case char == '_':
+			fallthrough
 		case unicode.IsDigit(char), unicode.IsLetter(char):
 			token = token.Add(char)
 		default:
