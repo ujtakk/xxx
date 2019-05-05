@@ -181,14 +181,10 @@ func dumpLine(tokens []*XXXToken, env *XXXEnv) *XXXData {
 		}
 	}
 
-	if data.capacity != 0 {
-		panic("ERROR: each line must be a multiple of 8 bits")
-	}
-
 	return data
 }
 
-func Dump(dst string, pool [][]*XXXToken, env *XXXEnv) {
+func Dump(dst string, pool [][]*XXXToken, env *XXXEnv, little bool) {
 	var file *os.File
 	if dst == "" {
 		file = os.Stdout
@@ -204,7 +200,7 @@ func Dump(dst string, pool [][]*XXXToken, env *XXXEnv) {
 	writer := bufio.NewWriter(file)
 	for _, tokens := range pool {
 		data := dumpLine(tokens, env)
-		_, err := writer.Write(data.body)
+		_, err := writer.Write(data.Compile(little))
 		if err != nil {
 			panic(err)
 		}

@@ -72,6 +72,20 @@ func (d *XXXData) Join(s uint, l int) *XXXData {
 	return d
 }
 
+func (d *XXXData) Compile(little bool) []byte {
+	if d.capacity != 0 {
+		panic("ERROR: each line must be a multiple of 8 bits")
+	}
+
+	if little {
+		for l, r := 0, len(d.body)-1; l < r; l, r = l+1, r-1 {
+			d.body[l], d.body[r] = d.body[r], d.body[l]
+		}
+	}
+
+	return d.body
+}
+
 // TODO: map may be inefficient?
 type XXXEnv map[string]*XXXToken
 

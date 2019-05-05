@@ -19,15 +19,17 @@ func usage(exitcode int) {
 }
 
 type Option struct {
-	help bool
-	dst  string
-	src  string
+	help   bool
+	little bool
+	dst    string
+	src    string
 }
 
 func newOption() *Option {
 	opt := new(Option)
 
 	flag.BoolVar(&opt.help, "h", false, "Show usage")
+	flag.BoolVar(&opt.little, "l", false, "Dump in little-endian format")
 	flag.StringVar(&opt.dst, "o", "", "Specify target")
 
 	flag.Parse()
@@ -46,5 +48,5 @@ func main() {
 	}
 
 	pool, env := Parse(opt.src)
-	Dump(opt.dst, pool, env)
+	Dump(opt.dst, pool, env, opt.little)
 }
